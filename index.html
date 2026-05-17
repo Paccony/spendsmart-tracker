@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="cnr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SpendSmart – Pametno praćenje troškova | Budget Tracker</title>
+<meta name="description" content="SpendSmart je besplatna aplikacija za praćenje dnevnih troškova. Analizirajte potrošnju po kategorijama, postavljajte budžete i dobijajte pametne savjete za uštedu novca."/>
+<meta name="theme-color" content="#1D9E75"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --green: #1D9E75;
+  --green-dark: #0F6E56;
+  --green-light: #E1F5EE;
+  --red: #E24B4A;
+  --amber: #BA7517;
+  --blue: #378ADD;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: #F5F7F5;
+  color: #1a1a1a;
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: var(--font); cursor: pointer; }
+input, select, textarea { font-family: var(--font); }
+.container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid #e8ebe8;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: var(--shadow);
+}
+.topbar-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; max-width: 900px; margin: 0 auto;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 36px; height: 36px; background: var(--green);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+}
+.logo-text { font-size: 17px; font-weight: 600; color: #1a1a1a; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lang-switcher { display: flex; gap: 4px; }
+.lang-btn {
+  font-size: 11px; font-weight: 500; padding: 4px 8px;
+  border: 1px solid #d0d5d0; border-radius: 6px;
+  background: transparent; color: #555; transition: all 0.15s;
+}
+.lang-btn:hover, .lang-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; border: 1px solid #d0d5d0;
+  background: #fff; color: #1a1a1a; transition: all 0.15s;
+}
+.btn-primary { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+
+/* Main */
+.main { padding: 24px 0 60px; }
+
+/* Month bar */
+.month-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border-radius: var(--radius); padding: 14px 20px;
+  margin-bottom: 20px; box-shadow: var(--shadow);
+  flex-wrap: wrap; gap: 10px;
+}
+.month-nav { display: flex; align-items: center; gap: 12px; }
+.month-nav button { background: none; border: none; color: #666; padding: 4px; cursor: pointer; border-radius: 6px; }
+.month-nav button:hover { background: #f0f0f0; }
+.month-title { font-size: 16px; font-weight: 600; }
+.month-sub { font-size: 12px; color: #888; }
+
+/* Metrics */
+.metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (max-width: 600px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+.metric-card {
+  background: #fff; border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow); position: relative;
+}
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--green);
+}
+.metric-card.red::before { background: var(--red); }
+.metric-card.amber::before { background: var(--amber); }
+.metric-card.blue::before { background: var(--blue); }
+.metric-label { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.metric-value { font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: var(--mono); }
+.metric-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+/* Cards */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+.card {
+  background: #fff; border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 12px; font-weight: 600; color: #888;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* Categories */
+.cat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cat-name { font-size: 13px; color: #333; flex: 1; }
+.cat-bar-track { flex: 2; height: 5px; background: #eee; border-radius: 3px; overflow: hidden; }
+.cat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.cat-pct { font-size: 11px; color: #999; min-width: 32px; text-align: right; }
+.cat-amt { font-size: 12px; font-weight: 500; color: #444; min-width: 56px; text-align: right; font-family: var(--mono); }
+
+/* AI Box */
+.ai-box {
+  background: linear-gradient(135deg, #F0FBF7 0%, #E1F5EE 100%);
+  border: 1px solid #b8e8d4; border-radius: var(--radius);
+  padding: 20px; margin-bottom: 20px;
+}
+.ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ai-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--green); color: #fff; font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 20px;
+}
+.ai-content { font-size: 14px; color: #2a4a3a; line-height: 1.7; min-height: 80px; }
+.ai-content.loading { color: #88b09a; font-style: italic; }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.ai-chip {
+  font-size: 12px; padding: 6px 14px; border-radius: 20px;
+  border: 1px solid #b8e8d4; background: #fff; color: #0F6E56;
+  font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.ai-chip:hover { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* Expenses list */
+.exp-date-header {
+  font-size: 11px; font-weight: 600; color: #999;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 14px 0 6px; display: flex; justify-content: space-between;
+}
+.exp-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid #f0f0f0;
+}
+.exp-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.exp-info { flex: 1; min-width: 0; }
+.exp-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-cat { font-size: 12px; color: #999; margin-top: 1px; }
+.exp-right { text-align: right; }
+.exp-amt { font-size: 14px; font-weight: 600; color: var(--red); font-family: var(--mono); }
+.exp-del { font-size: 11px; color: #ccc; margin-top: 2px; cursor: pointer; }
+.exp-del:hover { color: var(--red); }
+
+/* Budget */
+.budget-item { margin-bottom: 14px; }
+.budget-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.budget-name { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.budget-nums { font-size: 12px; color: #888; font-family: var(--mono); }
+.budget-track { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+.budget-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
+.badge-ok { background: #E1F5EE; color: #0F6E56; }
+.badge-warn { background: #FAEEDA; color: #854F0B; }
+.badge-over { background: #FCEBEB; color: #A32D2D; }
+
+/* Modals */
+.overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: #fff; border-radius: var(--radius); padding: 28px;
+  width: 100%; max-width: 420px; box-shadow: var(--shadow-md);
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 500; color: #666; margin-bottom: 5px; display: block; }
+.form-input {
+  width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+  border-radius: var(--radius-sm); font-size: 14px;
+  color: #1a1a1a; transition: border 0.15s; background: #fff;
+}
+.form-input:focus { outline: none; border-color: var(--green); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 500; z-index: 999; transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: #f0f2f0; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+.tab { flex: 1; padding: 8px; text-align: center; border-radius: 8px; font-size: 13px; font-weight: 500; border: none; background: transparent; color: #888; cursor: pointer; }
+.tab.active { background: #fff; color: #1a1a1a; box-shadow: var(--shadow); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+footer { text-align: center; padding: 20px; font-size: 12px; color: #bbb; border-top: 1px solid #eee; }
+footer a { color: var(--green); }
+
+@media (max-width: 480px) {
+  .topbar-actions { width: 100%; justify-content: flex-end; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2L12.5 7.5H18L13.5 11L15.5 17L10 13.5L4.5 17L6.5 11L2 7.5H7.5L10 2Z" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <div class="logo-text">SpendSmart</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="lang-switcher">
+        <button class="lang-btn active" onclick="setLang('cnr')">CNR</button>
+        <button class="lang-btn" onclick="setLang('sr')">SRB</button>
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('de')">DE</button>
+      </div>
+      <button class="btn btn-sm" onclick="openModal('budgetModal')" id="btnBudget">📊 Budžet</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('addModal')" id="btnAdd">➕ Novi trošak</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="month-bar">
+      <div class="month-nav">
+        <button onclick="prevMonth()">◀</button>
+        <div>
+          <div class="month-title" id="monthTitle"></div>
+          <div class="month-sub" id="monthSub"></div>
+        </div>
+        <button onclick="nextMonth()">▶</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn btn-sm" onclick="clearMonth()" style="color:#E24B4A;">🗑️</button>
+      </div>
+    </div>
+
+    <div class="metrics-grid" id="metricsGrid"></div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('overview')">📊 Pregled</button>
+      <button class="tab" onclick="switchTab('expenses')">📝 Troškovi</button>
+      <button class="tab" onclick="switchTab('budget')">🎯 Budžet</button>
+      <button class="tab" onclick="switchTab('analysis')">🤖 AI Analiza</button>
+    </div>
+
+    <div id="tab-overview" class="tab-panel active">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">📁 Po kategoriji</div>
+          <div id="catList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Sedmični trend</div>
+          <div style="position:relative;height:180px"><canvas id="trendChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🕐 Nedavni troškovi <span id="expCountOverview" style="font-weight:400;color:#bbb"></span></div>
+        <div id="expListOverview"></div>
+      </div>
+    </div>
+
+    <div id="tab-expenses" class="tab-panel">
+      <div class="card">
+        <div class="card-title">
+          📋 Svi troškovi
+          <div style="display:flex;gap:8px">
+            <select class="form-input" id="filterCat" style="width:130px;padding:5px 8px;font-size:12px" onchange="renderAll()">
+              <option value="">Sve kategorije</option>
+            </select>
+            <select class="form-input" id="sortBy" style="width:120px;padding:5px 8px;font-size:12px" onchange="renderAll()">
+              <option value="date">Po datumu</option>
+              <option value="amt">Po iznosu</option>
+            </select>
+          </div>
+        </div>
+        <div id="expListAll"></div>
+      </div>
+    </div>
+
+    <div id="tab-budget" class="tab-panel">
+      <div class="card">
+        <div class="card-title">
+          💰 Praćenje budžeta
+          <button class="btn btn-sm" onclick="openModal('editBudgetModal')">✏️ Uredi</button>
+        </div>
+        <div id="budgetList"></div>
+      </div>
+    </div>
+
+    <div id="tab-analysis" class="tab-panel">
+      <div class="ai-box">
+        <div class="ai-header">
+          <span class="ai-badge">✨ AI</span>
+          <span style="font-size:13px;font-weight:500;color:var(--green-dark)">Pametna analiza troškova</span>
+        </div>
+        <div class="ai-content" id="aiText">Odaberi vrstu analize ispod...</div>
+        <div class="ai-chips">
+          <button class="ai-chip" onclick="runAI('general')">📊 Analiziraj troškove</button>
+          <button class="ai-chip" onclick="runAI('save')">🐷 Gdje mogu uštediti?</button>
+          <button class="ai-chip" onclick="runAI('budget')">🧮 Predloži mi budžet</button>
+          <button class="ai-chip" onclick="runAI('compare')">📈 Poredi s prosjekom</button>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">🥧 Raspodjela troškova</div>
+          <div style="position:relative;height:200px"><canvas id="pieChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 Top 5 troškova</div>
+          <div id="topExpenses"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">➕ Novi trošak</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Naziv</label>
+        <input class="form-input" type="text" id="newName" placeholder="npr. Kafić"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Iznos (EUR)</label>
+        <input class="form-input" type="number" id="newAmt" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Kategorija</label>
+        <select class="form-input" id="newCat"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Datum</label>
+        <input class="form-input" type="date" id="newDate"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Napomena (opciono)</label>
+      <input class="form-input" type="text" id="newNote" placeholder="..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('addModal')">Odustani</button>
+      <button class="btn btn-primary" onclick="addExpense()">💾 Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="editBudgetModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Uredi budžete</div>
+    <div id="budgetEditForm"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('editBudgetModal')">Odustani</button>
+      <button class="btn btn-primary" onclick="saveBudgets()">💾 Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="budgetModal">
+  <div class="modal">
+    <div class="modal-title">📊 Pregled budžeta</div>
+    <div id="budgetModalContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal('budgetModal')">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <p>SpendSmart © 2025 · <a href="#">spendsmart.app</a> · Besplatno · Bez reklama · Vaši podaci ostaju kod vas</p>
+</footer>
+
+<script>
+// ========== KONSTANTE ==========
+const CAT_COLORS = { Food:'#1D9E75', Transport:'#378ADD', Entertainment:'#D4537E', Health:'#639922', Clothing:'#D85A30', Education:'#7F77DD', Bills:'#BA7517', Other:'#888780' };
+const CAT_ICONS  = { Food:'🍽️', Transport:'🚗', Entertainment:'🎬', Health:'❤️', Clothing:'👕', Education:'📚', Bills:'📄', Other:'📌' };
+const CAT_ORDER = ['Food','Transport','Entertainment','Health','Clothing','Education','Bills','Other'];
+
+// ========== PODACI ==========
+let lang = 'cnr';
+let currentMonth = 5;
+let currentYear = 2025;
+let activeTab = 'overview';
+let trendChartObj = null;
+let pieChartObj = null;
+
+let expenses = [
+  { id:1, date:'2025-05-15', name:'SU, hleb', cat:'Food', amt:50, note:'' },
+  { id:2, date:'2025-05-15', name:'Nedeljni market', cat:'Food', amt:450, note:'' },
+  { id:3, date:'2025-05-14', name:'Gorivo', cat:'Transport', amt:120, note:'' },
+  { id:4, date:'2025-05-13', name:'Struja', cat:'Bills', amt:2500, note:'' },
+  { id:5, date:'2025-05-12', name:'Bioskop i večera', cat:'Entertainment', amt:800, note:'' },
+  { id:6, date:'2025-05-11', name:'Restoran', cat:'Food', amt:350, note:'' },
+  { id:7, date:'2025-05-10', name:'Nove patike', cat:'Clothing', amt:1500, note:'' },
+  { id:8, date:'2025-05-09', name:'Apoteka', cat:'Health', amt:200, note:'' },
+  { id:9, date:'2025-05-08', name:'Dostava hrane', cat:'Food', amt:600, note:'' },
+  { id:10, date:'2025-05-07', name:'Taksi', cat:'Transport', amt:150, note:'' },
+  { id:11, date:'2025-05-06', name:'Online kurs', cat:'Education', amt:3000, note:'' },
+];
+let budgets = { Food:1800, Transport:400, Entertainment:600, Health:400, Clothing:1000, Education:2000, Bills:2000, Other:500 };
+let nextId = 12;
+
+// ========== JEZIČKE MAPE ==========
+const LANGS = {
+  cnr: {
+    monthNames:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],
+    dayNames:['Nedelja','Ponedeljak','Utorak','Srijeda','Četvrtak','Petak','Subota'],
+    cats:{ Food:'Hrana', Transport:'Prevoz', Entertainment:'Zabava', Health:'Zdravlje', Clothing:'Odjeća', Education:'Edukacija', Bills:'Računi', Other:'Ostalo' },
+    thisMonth:'Ovaj mjesec', thisWeek:'Ova sedmica', today:'Danas', avgDay:'Prosjek/dan',
+    transactions:'transakcija', noExpenses:'Nema troškova za ovaj period.',
+    confirmClear:'Obrisati sve troškove za ovaj mjesec?', expAdded:'Trošak dodan!', budgetSaved:'Budžet sačuvan!'
+  },
+  sr: {
+    monthNames:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],
+    dayNames:['Nedelja','Ponedeljak','Utorak','Sreda','Četvrtak','Petak','Subota'],
+    cats:{ Food:'Hrana', Transport:'Prevoz', Entertainment:'Zabava', Health:'Zdravlje', Clothing:'Odeća', Education:'Edukacija', Bills:'Računi', Other:'Ostalo' },
+    thisMonth:'Ovaj mesec', thisWeek:'Ova nedelja', today:'Danas', avgDay:'Prosek/dan',
+    transactions:'transakcija', noExpenses:'Nema troškova za ovaj period.',
+    confirmClear:'Obrisati sve troškove za ovaj mesec?', expAdded:'Trošak dodat!', budgetSaved:'Budžet sačuvan!'
+  },
+  en: {
+    monthNames:['January','February','March','April','May','June','July','August','September','October','November','December'],
+    dayNames:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    cats:{ Food:'Food', Transport:'Transport', Entertainment:'Entertainment', Health:'Health', Clothing:'Clothing', Education:'Education', Bills:'Bills', Other:'Other' },
+    thisMonth:'This Month', thisWeek:'This Week', today:'Today', avgDay:'Avg/Day',
+    transactions:'transactions', noExpenses:'No expenses for this period.',
+    confirmClear:'Delete all expenses for this month?', expAdded:'Expense added!', budgetSaved:'Budget saved!'
+  },
+  de: {
+    monthNames:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+    dayNames:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],
+    cats:{ Food:'Essen', Transport:'Transport', Entertainment:'Unterhaltung', Health:'Gesundheit', Clothing:'Kleidung', Education:'Bildung', Bills:'Rechnungen', Other:'Sonstiges' },
+    thisMonth:'Diesen Monat', thisWeek:'Diese Woche', today:'Heute', avgDay:'Ø/Tag',
+    transactions:'Transaktionen', noExpenses:'Keine Ausgaben für diesen Zeitraum.',
+    confirmClear:'Alle Ausgaben dieses Monats löschen?', expAdded:'Ausgabe hinzugefügt!', budgetSaved:'Budget gespeichert!'
+  }
+};
+
+function t(key) { return LANGS[lang][key] || key; }
+function catName(cat) { return LANGS[lang].cats[cat] || cat; }
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === (l==='cnr'?'cnr':l==='sr'?'srb':l));
+  });
+  renderAll();
+}
+
+function getMonthExpenses() {
+  return expenses.filter(e => {
+    let d = new Date(e.date);
+    return d.getMonth()+1 === currentMonth && d.getFullYear() === currentYear;
+  });
+}
+function getTotal(exps) { return exps.reduce((s,e)=>s+e.amt, 0); }
+function getCatTotals(exps) {
+  let t = {};
+  exps.forEach(e => { t[e.cat] = (t[e.cat]||0) + e.amt; });
+  return t;
+}
+function getWeekExpenses() {
+  let today = new Date(currentYear, currentMonth-1, 15);
+  return getMonthExpenses().filter(e => { let d=new Date(e.date); return (today-d)<7*86400000; });
+}
+function getTodayExpenses() {
+  let today = `${currentYear}-${String(currentMonth).padStart(2,'0')}-15`;
+  return getMonthExpenses().filter(e => e.date === today);
+}
+
+function renderMetrics() {
+  let me = getMonthExpenses();
+  let total = getTotal(me);
+  let weekTotal = getTotal(getWeekExpenses());
+  let todayTotal = getTotal(getTodayExpenses());
+  let days = new Set(me.map(e=>e.date)).size || 1;
+  let avg = Math.round(total/days);
+  let html = `
+    <div class="metric-card"><div class="metric-label">${t('thisMonth')}</div><div class="metric-value">${total.toLocaleString()} €</div><div class="metric-sub">${t('monthNames')[currentMonth-1]}</div></div>
+    <div class="metric-card blue"><div class="metric-label">${t('thisWeek')}</div><div class="metric-value">${weekTotal.toLocaleString()} €</div><div class="metric-sub">7 dana</div></div>
+    <div class="metric-card red"><div class="metric-label">${t('today')}</div><div class="metric-value">${todayTotal.toLocaleString()} €</div><div class="metric-sub">15. ${t('monthNames')[currentMonth-1]}</div></div>
+    <div class="metric-card amber"><div class="metric-label">${t('avgDay')}</div><div class="metric-value">${avg.toLocaleString()} €</div><div class="metric-sub">${me.length} ${t('transactions')}</div></div>
+  `;
+  document.getElementById('metricsGrid').innerHTML = html;
+}
+
+function renderCategoryList() {
+  let me = getMonthExpenses();
+  let totals = getCatTotals(me);
+  let total = getTotal(me) || 1;
+  let html = '';
+  for (let cat of CAT_ORDER) {
+    let amt = totals[cat] || 0;
+    let pct = Math.round(amt/total*100);
+    html += `<div class="cat-row">
+      <span class="cat-dot" style="background:${CAT_COLORS[cat]}"></span>
+      <span class="cat-name">${catName(cat)}</span>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${CAT_COLORS[cat]}"></div></div>
+      <span class="cat-pct">${pct}%</span>
+      <span class="cat-amt">${amt.toLocaleString()} €</span>
+    </div>`;
+  }
+  document.getElementById('catList').innerHTML = html;
+}
+
+function renderExpenseList(containerId, exps, limit) {
+  let el = document.getElementById(containerId);
+  if (!exps.length) { el.innerHTML = `<p style="color:#bbb;padding:12px 0">${t('noExpenses')}</p>`; return; }
+  let grouped = {};
+  exps.forEach(e => { (grouped[e.date]||(grouped[e.date]=[])).push(e); });
+  let html = '';
+  let count = 0;
+  Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date,items])=>{
+    if (limit && count >= limit) return;
+    let d = new Date(date+'T12:00:00');
+    let dayTotal = getTotal(items);
+    html += `<div class="exp-date-header"><span>${t('dayNames')[d.getDay()]}, ${d.getDate()}. ${t('monthNames')[d.getMonth()]}</span><span>${dayTotal.toLocaleString()} €</span></div>`;
+    items.forEach(e => {
+      if (limit && count >= limit) return;
+      html += `<div class="exp-item">
+        <div class="exp-icon" style="background:${CAT_COLORS[e.cat]}20">${CAT_ICONS[e.cat]}</div>
+        <div class="exp-info"><div class="exp-name">${e.name}${e.note?` <span style="color:#bbb;">· ${e.note}</span>`:''}</div><div class="exp-cat">${catName(e.cat)}</div></div>
+        <div class="exp-right"><div class="exp-amt">-${e.amt.toLocaleString()} €</div><div class="exp-del" onclick="deleteExpense(${e.id})">✕</div></div>
+      </div>`;
+      count++;
+    });
+  });
+  el.innerHTML = html;
+}
+
+function renderBudget() {
+  let me = getMonthExpenses();
+  let totals = getCatTotals(me);
+  let html = '';
+  for (let cat of CAT_ORDER) {
+    let budget = budgets[cat] || 0;
+    let spent = totals[cat] || 0;
+    let pct = Math.min(Math.round(spent/budget*100), 100);
+    let over = spent > budget;
+    let warn = !over && spent/budget > 0.75;
+    let cls = over ? 'badge-over' : warn ? 'badge-warn' : 'badge-ok';
+    let label = over ? 'Prekoračen' : warn ? 'Blizu limita' : 'OK';
+    let barColor = over ? '#E24B4A' : warn ? '#BA7517' : CAT_COLORS[cat];
+    html += `<div class="budget-item">
+      <div class="budget-row">
+        <span class="budget-name"><span class="cat-dot" style="background:${CAT_COLORS[cat]}"></span>${catName(cat)}<span class="badge ${cls}">${label}</span></span>
+        <span class="budget-nums">${spent.toLocaleString()} / ${budget.toLocaleString()} €</span>
+      </div>
+      <div class="budget-track"><div class="budget-fill" style="width:${pct}%;background:${barColor}"></div></div>
+    </div>`;
+  }
+  document.getElementById('budgetList').innerHTML = html;
+  let modalEl = document.getElementById('budgetModalContent');
+  if (modalEl) modalEl.innerHTML = html;
+}
+
+function renderBudgetEditForm() {
+  let html = '';
+  for (let cat of CAT_ORDER) {
+    html += `<div class="form-group">
+      <label class="form-label"><span class="cat-dot" style="background:${CAT_COLORS[cat]};display:inline-block;margin-right:6px"></span>${catName(cat)}</label>
+      <input class="form-input" type="number" id="bgt_${cat}" value="${budgets[cat]}" min="0" step="10"/>
+    </div>`;
+  }
+  document.getElementById('budgetEditForm').innerHTML = html;
+}
+
+function saveBudgets() {
+  for (let cat of CAT_ORDER) {
+    let el = document.getElementById('bgt_'+cat);
+    if (el) budgets[cat] = parseFloat(el.value) || 0;
+  }
+  localStorage.setItem('spendsmart_budgets', JSON.stringify(budgets));
+  closeModal('editBudgetModal');
+  renderBudget();
+  showToast(t('budgetSaved'));
+}
+
+function renderTrend() {
+  let me = getMonthExpenses();
+  let labels = [];
+  let data = [];
+  for (let i=6; i>=0; i--) {
+    let d = new Date(currentYear, currentMonth-1, 15-i);
+    let key = d.toISOString().split('T')[0];
+    labels.push(d.getDate()+' '+t('monthNames')[d.getMonth()].slice(0,3));
+    data.push(getTotal(me.filter(e=>e.date===key)));
+  }
+  let ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChartObj) trendChartObj.destroy();
+  trendChartObj = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ data, backgroundColor:'#9FE1CB', borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ ticks:{ callback:v=>v+'€' } } } }
+  });
+}
+
+function renderPieChart() {
+  let me = getMonthExpenses();
+  let totals = getCatTotals(me);
+  let ctx = document.getElementById('pieChart').getContext('2d');
+  if (pieChartObj) pieChartObj.destroy();
+  pieChartObj = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels: Object.keys(totals).map(catName), datasets:[{ data: Object.values(totals), backgroundColor: Object.keys(totals).map(c=>CAT_COLORS[c]), borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10 } } } }
+  });
+}
+
+function renderTopExpenses() {
+  let me = getMonthExpenses();
+  let sorted = [...me].sort((a,b)=>b.amt-a.amt).slice(0,5);
+  let max = sorted[0]?.amt || 1;
+  let html = '';
+  for (let i=0; i<sorted.length; i++) {
+    let e = sorted[i];
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:12px;color:#bbb;min-width:20px">${i+1}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">${e.name}</div>
+        <div style="height:4px;background:#eee;border-radius:2px;margin-top:4px"><div style="height:100%;width:${Math.round(e.amt/max*100)}%;background:${CAT_COLORS[e.cat]};border-radius:2px"></div></div>
+      </div>
+      <span style="font-size:13px;font-weight:600;font-family:monospace;color:${CAT_COLORS[e.cat]}">${e.amt.toLocaleString()} €</span>
+    </div>`;
+  }
+  document.getElementById('topExpenses').innerHTML = html || '<p style="color:#bbb;">Nema troškova</p>';
+}
+
+function renderMonthBar() {
+  document.getElementById('monthTitle').textContent = t('monthNames')[currentMonth-1]+' '+currentYear;
+  document.getElementById('monthSub').textContent = getMonthExpenses().length+' '+t('transactions');
+}
+
+function renderFilterCat() {
+  let sel = document.getElementById('filterCat');
+  if (!sel) return;
+  let cats = [...new Set(expenses.map(e=>e.cat))];
+  sel.innerHTML = '<option value="">Sve kategorije</option>' + cats.map(c=>`<option value="${c}">${catName(c)}</option>`).join('');
+}
+
+function renderCatSelect() {
+  let sel = document.getElementById('newCat');
+  if (!sel) return;
+  sel.innerHTML = CAT_ORDER.map(c=>`<option value="${c}">${catName(c)}</option>`).join('');
+  sel.value = 'Food';
+}
+
+function renderAll() {
+  renderMonthBar();
+  renderMetrics();
+  renderCategoryList();
+  let filterCat = document.getElementById('filterCat')?.value || '';
+  let sortBy = document.getElementById('sortBy')?.value || 'date';
+  let me = getMonthExpenses();
+  let filtered = filterCat ? me.filter(e=>e.cat===filterCat) : me;
+  if (sortBy === 'amt') filtered = [...filtered].sort((a,b)=>b.amt-a.amt);
+  renderExpenseList('expListOverview', me, 8);
+  renderExpenseList('expListAll', filtered);
+  let cnt = document.getElementById('expCountOverview');
+  if (cnt) cnt.textContent = me.length + ' ' + t('transactions');
+  renderBudget();
+  renderTrend();
+  if (activeTab === 'analysis') { renderPieChart(); renderTopExpenses(); }
+  renderFilterCat();
+  renderCatSelect();
+  localStorage.setItem('spendsmart_expenses', JSON.stringify(expenses));
+  localStorage.setItem('spendsmart_nextId', nextId);
+}
+
+function switchTab(name) {
+  activeTab = name;
+  let tabs = ['overview','expenses','budget','analysis'];
+  document.querySelectorAll('.tab').forEach((btn,i) => {
+    btn.classList.toggle('active', tabs[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'tab-'+name);
+  });
+  if (name === 'analysis') { renderPieChart(); renderTopExpenses(); }
+}
+
+function addExpense() {
+  let name = document.getElementById('newName').value.trim();
+  let amt = parseFloat(document.getElementById('newAmt').value);
+  let cat = document.getElementById('newCat').value;
+  let date = document.getElementById('newDate').value;
+  let note = document.getElementById('newNote').value.trim();
+  if (!name || !amt || amt<=0 || !date) return;
+  expenses.unshift({ id:nextId++, date, name, cat, amt, note });
+  closeModal('addModal');
+  document.getElementById('newName').value = '';
+  document.getElementById('newAmt').value = '';
+  document.getElementById('newNote').value = '';
+  renderAll();
+  showToast(t('expAdded'));
+}
+
+function deleteExpense(id) {
+  expenses = expenses.filter(e => e.id !== id);
+  renderAll();
+}
+
+function prevMonth() { currentMonth--; if(currentMonth<1){currentMonth=12;currentYear--;} renderAll(); }
+function nextMonth() { currentMonth++; if(currentMonth>12){currentMonth=1;currentYear++;} renderAll(); }
+
+function clearMonth() {
+  if (!confirm(t('confirmClear'))) return;
+  expenses = expenses.filter(e => {
+    let d = new Date(e.date);
+    return !(d.getMonth()+1===currentMonth && d.getFullYear()===currentYear);
+  });
+  renderAll();
+}
+
+function exportCSV() {
+  let me = getMonthExpenses();
+  let rows = [['Datum','Naziv','Kategorija','Iznos (EUR)','Napomena']];
+  for (let e of me) rows.push([e.date, e.name, catName(e.cat), e.amt, e.note||'']);
+  let csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  let a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download = `spendsmart_${currentYear}_${String(currentMonth).padStart(2,'0')}.csv`;
+  a.click();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); if(id==='editBudgetModal') renderBudgetEditForm(); if(id==='budgetModal') renderBudget(); if(id==='addModal') document.getElementById('newDate').value = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${new Date().getDate()}`; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e=>{if(e.target===o)o.classList.remove('open');}));
+
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ========== MOCK AI (RADI BEZ API KLJUČA) ==========
+function runAI(type) {
+  let me = getMonthExpenses();
+  let totals = getCatTotals(me);
+  let total = getTotal(me);
+  let el = document.getElementById('aiText');
+  
+  // Generiši analizu na osnovu stvarnih podataka
+  let analysis = '';
+  
+  if (type === 'general') {
+    let topCat = Object.entries(totals).sort((a,b)=>b[1]-a[1])[0];
+    let topCatName = topCat ? catName(topCat[0]) : 'nema';
+    let pct = topCat ? Math.round(topCat[1]/total*100) : 0;
+    analysis = `📊 **Analiza za ${t('monthNames')[currentMonth-1]} ${currentYear}**\n\n`;
+    analysis += `Ukupno ste potrošili **${total.toLocaleString()}€**. Najveća stavka je **${topCatName}** sa ${pct}% ukupnih troškova (${topCat?.[1].toLocaleString() || 0}€).\n\n`;
+    if (totals['Food'] && totals['Food'] > 800) analysis += `🍽️ Hrana čini značajan dio budžeta. Razmislite o planiranju obroka i smanjenju dostave.\n`;
+    if (totals['Entertainment'] && totals['Entertainment'] > 500) analysis += `🎬 Zabava je iznad prosjeka - možete naći besplatne alternative za vikend aktivnosti.\n`;
+    if (totals['Bills'] && totals['Bills'] > 1500) analysis += `💡 Računi su visoki - provjerite da li možete uštedjeti energetskom efikasnošću.\n`;
+    analysis += `\n💪 Dobro: Pratite troškove redovno. 🎯 Cilj za sljedeći mjesec: smanjite ${topCatName} za 10%.`;
+  }
+  else if (type === 'save') {
+    analysis = `💰 **3 načina da uštedite sljedećeg mjeseca:**\n\n`;
+    let suggestions = [];
+    if (totals['Food'] && totals['Food'] > 600) suggestions.push(`🍽️ **Hrana (${totals['Food'].toLocaleString()}€)** - Smanjite dostavu i kafiće za 30% (ušteda ~${Math.round(totals['Food']*0.3).toLocaleString()}€)`);
+    if (totals['Entertainment'] && totals['Entertainment'] > 300) suggestions.push(`🎬 **Zabava (${totals['Entertainment'].toLocaleString()}€)** - Birajte besplatne aktivnosti, ušteda ~${Math.round(totals['Entertainment']*0.4).toLocaleString()}€`);
+    if (totals['Transport'] && totals['Transport'] > 200) suggestions.push(`🚗 **Prevoz (${totals['Transport'].toLocaleString()}€)** - Koristite prevoz ili pješačite, ušteda ~${Math.round(totals['Transport']*0.25).toLocaleString()}€`);
+    if (totals['Clothing'] && totals['Clothing'] > 500) suggestions.push(`👕 **Odjeća (${totals['Clothing'].toLocaleString()}€)** - Sacekajte sniženja ili second hand, ušteda ~${Math.round(totals['Clothing']*0.5).toLocaleString()}€`);
+    if (suggestions.length === 0) suggestions.push(`📦 **Opšti savjet** - Uvijek napravite listu prije kupovine i uporedite cijene (ušteda 10-20%).`);
+    analysis += suggestions.slice(0,3).join('\n\n');
+    analysis += `\n\n🎯 Ukupna potencijalna ušteda: ~${Math.round(total*0.15).toLocaleString()}€ mjesečno!`;
+  }
+  else if (type === 'budget') {
+    analysis = `📋 **Predloženi budžet za sljedeći mjesec** (cilj: smanjenje za 10%):\n\n`;
+    for (let cat of CAT_ORDER) {
+      let spent = totals[cat] || 0;
+      let suggested = Math.round(spent * 0.9);
+      if (suggested > 0 || spent > 0) {
+        analysis += `• ${catName(cat)}: ${suggested.toLocaleString()}€ (trenutno ${spent.toLocaleString()}€)\n`;
+      }
+    }
+    analysis += `\n✨ Ukupno: ${Math.round(total*0.9).toLocaleString()}€ (ciljano)`;
+  }
+  else if (type === 'compare') {
+    analysis = `📈 **Poređenje sa prosjekom domaćinstva:**\n\n`;
+    let avgFood = 500, avgTransport = 300, avgEntertainment = 250, avgBills = 800;
+    if (totals['Food'] > avgFood) analysis += `🍽️ **Hrana**: Vaših ${totals['Food'].toLocaleString()}€ vs prosjek ${avgFood}€ → **${Math.round((totals['Food']/avgFood-1)*100)}% više**\n`;
+    else analysis += `🍽️ **Hrana**: Vaših ${(totals['Food']||0).toLocaleString()}€ vs prosjek ${avgFood}€ → odlično!\n`;
+    if (totals['Transport'] > avgTransport) analysis += `🚗 **Prevoz**: Vaših ${totals['Transport'].toLocaleString()}€ vs prosjek ${avgTransport}€ → **${Math.round((totals['Transport']/avgTransport-1)*100)}% više**\n`;
+    if (totals['Entertainment'] > avgEntertainment) analysis += `🎬 **Zabava**: Vaših ${totals['Entertainment'].toLocaleString()}€ vs prosjek ${avgEntertainment}€ → **${Math.round((totals['Entertainment']/avgEntertainment-1)*100)}% više**\n`;
+    if (totals['Bills'] > avgBills) analysis += `💡 **Računi**: Vaših ${totals['Bills'].toLocaleString()}€ vs prosjek ${avgBills}€ → **${Math.round((totals['Bills']/avgBills-1)*100)}% više**\n`;
+    analysis += `\n🎯 Fokusirajte se na kategorije gdje ste iznad prosjeka za najveću uštedu.`;
+  }
+  
+  el.innerHTML = analysis.replace(/\n/g,'<br>');
+}
+
+// ========== UČITAVANJE IZ LOCALSTORAGE ==========
+function loadFromLocalStorage() {
+  let savedExpenses = localStorage.getItem('spendsmart_expenses');
+  if (savedExpenses) {
+    try {
+      expenses = JSON.parse(savedExpenses);
+      let maxId = Math.max(...expenses.map(e=>e.id), 0);
+      if (maxId > 0) nextId = maxId + 1;
+    } catch(e) {}
+  }
+  let savedBudgets = localStorage.getItem('spendsmart_budgets');
+  if (savedBudgets) {
+    try {
+      let b = JSON.parse(savedBudgets);
+      budgets = { ...budgets, ...b };
+    } catch(e) {}
+  }
+}
+
+// ========== INIT ==========
+window.addEventListener('DOMContentLoaded', () => {
+  loadFromLocalStorage();
+  renderAll();
+});
+</script>
+</body>
+</html>
