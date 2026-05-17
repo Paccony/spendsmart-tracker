@@ -33,7 +33,8 @@ Smart expense tracking app with multi-language support (Montenegrin, Serbian, En
 
 ## Screenshots
 
-*(Add screenshots here later)*
+<img width="6" height="22" alt="Snimak ekrana 2026-05-17 221650" src="https://github.com/user-attachments/assets/f8165bf6-8a2d-4faf-b479-5601b04eb188" />
+
 
 ## License
 
