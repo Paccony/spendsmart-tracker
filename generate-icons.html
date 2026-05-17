@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Generiši SpendSmart ikone</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #F5F7F5;
+            color: #1a1a1a;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #1D9E75; margin-top: 0; }
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 16px;
+            margin: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #1D9E75;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0F6E56; }
+        .download-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .icon-card {
+            background: #f8f8f8;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .icon-card img {
+            display: block;
+            margin-bottom: 8px;
+        }
+        .size {
+            font-size: 12px;
+            color: #666;
+        }
+        .success {
+            background: #E1F5EE;
+            color: #0F6E56;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        hr { margin: 20px 0; }
+        pre {
+            background: #1a1a1a;
+            color: #9FE1CB;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🎨 SpendSmart - Generator ikona</h1>
+    <p>Ova stranica će automatski kreirati sve potrebne ikone za PWA instalaciju.</p>
+    
+    <canvas id="iconCanvas" width="512" height="512" style="display:none"></canvas>
+    
+    <div style="text-align: center;">
+        <button onclick="generateAllIcons()">🔽 Generiši i preuzmi sve ikone</button>
+        <button onclick="downloadAllAsZip()">📦 Preuzmi kao ZIP (sve ikone odjednom)</button>
+    </div>
+    
+    <div id="downloadArea" class="download-area"></div>
+    
+    <div id="successMessage" style="display:none" class="success">
+        ✅ Sve ikone su generisane! Preuzmite ih i uploadujte na GitHub u isti folder gdje je index.html
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Sljedeći koraci</h2>
+    <ol>
+        <li>Kliknite na dugme <strong>"Generiši i preuzmi sve ikone"</strong> iznad</li>
+        <li>Preuzete fajlove (icon-72.png, icon-96.png, itd.) uploadujte na GitHub</li>
+        <li>Ažurirajte <strong>index.html</strong> - dodajte link ka manifest.json (ako već niste)</li>
+        <li>Ažurirajte <strong>manifest.json</strong> - ikone su već konfigurisane</li>
+        <li>Gotovo! Vaša aplikacija je spremna za instalaciju na telefon</li>
+    </ol>
+</div>
+
+<script>
+// Funkcija za crtanje ikone
+function drawIcon(size) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Pozadina - zeleni gradijent
+    const gradient = ctx.createLinearGradient(0, 0, size, size);
+    gradient.addColorStop(0, '#1D9E75');
+    gradient.addColorStop(1, '#0F6E56');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    
+    // Zaobljeni uglovi (samo za veće rezolucije)
+    ctx.globalCompositeOperation = 'destination-in';
+    const radius = size * 0.22;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, radius);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    
+    // Simbol € (euro) - bijeli
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `bold ${size * 0.48}px "DM Sans", "Segoe UI", Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('€', size/2, size/2);
+    
+    // Dodatni detalj - svjetliji krug iza (opciono)
+    ctx.globalAlpha = 0.15;
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size * 0.32, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    
+    return canvas;
+}
+
+// RoundRect pomoćna funkcija
+CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.moveTo(x+r, y);
+    this.lineTo(x+w-r, y);
+    this.quadraticCurveTo(x+w, y, x+w, y+r);
+    this.lineTo(x+w, y+h-r);
+    this.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    this.lineTo(x+r, y+h);
+    this.quadraticCurveTo(x, y+h, x, y+h-r);
+    this.lineTo(x, y+r);
+    this.quadraticCurveTo(x, y, x+r, y);
+    return this;
+};
+
+// Generiši sve ikone
+function generateAllIcons() {
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    const downloadArea = document.getElementById('downloadArea');
+    downloadArea.innerHTML = '<p>🔄 Generisanje ikona...</p>';
+    
+    sizes.forEach(size => {
+        const canvas = drawIcon(size);
+        const link = document.createElement('a');
+        link.download = `icon-${size}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.innerHTML = `<img src="${link.href}" width="${Math.min(size, 64)}" height="${Math.min(size, 64)}"><br>${size}x${size}`;
+        link.style.display = 'inline-block';
+        link.style.margin = '10px';
+        link.style.textAlign = 'center';
+        link.style.textDecoration = 'none';
+        link.style.color = '#1D9E75';
+        link.style.fontSize = '12px';
+        
+        // Dodaj u download area
+        const container = document.createElement('div');
+        container.className = 'icon-card';
+        container.appendChild(link);
+        downloadArea.appendChild(container);
+        
+        // Automatski pokreni download (opciono)
+        setTimeout(() => link.click(), 100);
+    });
+    
+    document.getElementById('successMessage').style.display = 'block';
+}
+
+// ZIP download (za sve ikone odjednom)
+async function downloadAllAsZip() {
+    // Prvo provjeri da li je JSZip dostupan
+    if (typeof JSZip === 'undefined') {
+        // Učitaj JSZip biblioteku
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        script.onload = () => createAndDownloadZip();
+        document.head.appendChild(script);
+    } else {
+        createAndDownloadZip();
+    }
+}
+
+function createAndDownloadZip() {
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    const zip = new JSZip();
+    
+    sizes.forEach(size => {
+        const canvas = drawIcon(size);
+        const dataURL = canvas.toDataURL('image/png');
+        const base64 = dataURL.split(',')[1];
+        zip.file(`icon-${size}.png`, base64, { base64: true });
+    });
+    
+    zip.generateAsync({ type: 'blob' }).then(content => {
+        const link = document.createElement('a');
+        link.download = 'spendsmart-icons.zip';
+        link.href = URL.createObjectURL(content);
+        link.click();
+        URL.revokeObjectURL(link.href);
+    });
+    
+    document.getElementById('successMessage').style.display = 'block';
+}
+
+// Dodajemo prompt za ZIP
+window.generateAllIcons = generateAllIcons;
+window.downloadAllAsZip = downloadAllAsZip;
+</script>
+</body>
+</html>
